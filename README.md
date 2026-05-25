@@ -1,0 +1,113 @@
+# QuickFreela API
+
+Backend inicial em Flask + SQLite para o projeto QuickFreela.
+
+## Como executar
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python app.py
+```
+
+Servidor local:
+
+- Desktop/web: `http://localhost:5000`
+- Emulador Android: `http://10.0.2.2:5000`
+
+O arquivo SQLite `quickfreela.db` e criado automaticamente na primeira execucao.
+
+## Dados iniciais
+
+O banco ja sobe com estes usuarios para facilitar testes:
+
+| Perfil | Email | Senha |
+| --- | --- | --- |
+| cliente | `ana.cliente@quickfreela.local` | `123456` |
+| prestador | `bruno.dev@quickfreela.local` | `123456` |
+| prestador | `carla.design@quickfreela.local` | `123456` |
+
+## Endpoints principais
+
+| Metodo | Rota | Descricao |
+| --- | --- | --- |
+| GET | `/health` | Verifica status da API |
+| POST | `/auth/register` | Cadastra usuario |
+| POST | `/auth/login` | Login simples e retorno de token demonstrativo |
+| GET | `/usuarios` | Lista usuarios |
+| POST | `/usuarios` | Cria usuario |
+| GET | `/usuarios/<id>` | Busca usuario |
+| PUT | `/usuarios/<id>` | Atualiza usuario |
+| DELETE | `/usuarios/<id>` | Remove usuario |
+| GET | `/solicitacoes` | Lista solicitacoes |
+| POST | `/solicitacoes` | Cria solicitacao |
+| GET | `/solicitacoes/<id>` | Busca solicitacao |
+| PUT | `/solicitacoes/<id>` | Atualiza solicitacao |
+| PATCH | `/solicitacoes/<id>/status` | Atualiza status da solicitacao |
+| DELETE | `/solicitacoes/<id>` | Remove solicitacao |
+| GET | `/propostas` | Lista propostas |
+| POST | `/propostas` | Cria proposta |
+| GET | `/propostas/<id>` | Busca proposta |
+| PUT | `/propostas/<id>` | Atualiza proposta |
+| DELETE | `/propostas/<id>` | Remove proposta |
+| POST | `/solicitacoes/<id>/propostas/<proposta_id>/aceitar` | Aceita uma proposta |
+
+## Filtros uteis
+
+```text
+GET /usuarios?perfil=cliente
+GET /solicitacoes?status=aberta
+GET /solicitacoes?cliente_id=1
+GET /solicitacoes?prestador_id=2
+GET /solicitacoes?categoria=programacao
+GET /propostas?solicitacao_id=1
+GET /propostas?prestador_id=2
+GET /propostas?status=pendente
+```
+
+## Exemplos de payload
+
+Criar usuario:
+
+```json
+{
+  "nome": "Novo Cliente",
+  "email": "novo.cliente@email.com",
+  "senha": "123456",
+  "perfil": "cliente"
+}
+```
+
+Criar solicitacao:
+
+```json
+{
+  "cliente_id": 1,
+  "titulo": "Ajustar tela Flutter",
+  "descricao": "Corrigir overflow em uma tela de perfil.",
+  "categoria": "programacao",
+  "orcamento": 150.0,
+  "prazo_entrega": "2026-05-30"
+}
+```
+
+Criar proposta:
+
+```json
+{
+  "solicitacao_id": 1,
+  "prestador_id": 2,
+  "valor": 140.0,
+  "prazo_dias": 2,
+  "mensagem": "Consigo corrigir e entregar com um resumo das alteracoes."
+}
+```
+
+Atualizar status:
+
+```json
+{
+  "status": "concluida"
+}
+```
