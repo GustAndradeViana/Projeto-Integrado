@@ -8,6 +8,7 @@ Backend inicial em Flask + SQLite para o projeto QuickFreela.
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+docker compose up -d
 python app.py
 ```
 
@@ -15,6 +16,7 @@ Servidor local:
 
 - Desktop/web: `http://localhost:5000`
 - Emulador Android: `http://10.0.2.2:5000`
+- Celular fisico: `http://IP_DA_MAQUINA:5000`
 
 O arquivo SQLite `quickfreela.db` e criado automaticamente na primeira execucao.
 
@@ -33,6 +35,7 @@ O banco ja sobe com estes usuarios para facilitar testes:
 | Metodo | Rota | Descricao |
 | --- | --- | --- |
 | GET | `/health` | Verifica status da API |
+| GET | `/health/mom` | Verifica conectividade com RabbitMQ |
 | POST | `/auth/register` | Cadastra usuario |
 | POST | `/auth/login` | Login simples e retorno de token demonstrativo |
 | GET | `/usuarios` | Lista usuarios |
@@ -111,3 +114,39 @@ Atualizar status:
   "status": "concluida"
 }
 ```
+
+## Sprint 2: MOM com RabbitMQ
+
+O projeto agora usa RabbitMQ como MOM para comunicacao assincrona orientada a eventos.
+O Redis tambem sobe pelo `docker-compose.yml`, ficando disponivel para proximas sprints.
+
+Subir os servicos:
+
+```powershell
+docker compose up -d
+```
+
+Verificar RabbitMQ:
+
+```powershell
+Invoke-RestMethod http://localhost:5000/health/mom
+```
+
+Iniciar consumidor de eventos:
+
+```powershell
+python consumer_eventos.py
+```
+
+Eventos principais publicados pelo backend:
+
+- `solicitacao.criada`: apos `POST /solicitacoes`
+- `solicitacao.status_atualizado`: apos `PATCH /solicitacoes/<id>/status`
+- `proposta.criada`: apos `POST /propostas`
+- `proposta.aceita`: apos aceitar uma proposta
+
+Documentacao da sprint:
+
+- `docs/eventos-mom.md`
+- `docs/evidencia-mom.md`
+- `docs/relatorio-integracao-mom.md`
