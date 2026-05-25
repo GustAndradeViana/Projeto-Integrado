@@ -10,6 +10,7 @@ from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
+from messaging import check_broker, publish_event
 
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE = Path(os.environ.get("QUICKFREELA_DB", BASE_DIR / "quickfreela.db"))
@@ -253,9 +254,10 @@ def get_proposta_or_404(proposta_id: int) -> dict[str, Any]:
 
 
 def publicar_evento(tipo: str, dados: dict[str, Any]) -> None:
-    """Gancho simples para evoluir depois com RabbitMQ/Redis."""
+    """Publica evento de dominio no RabbitMQ sem bloquear o fluxo REST."""
     evento = {"tipo": tipo, "dados": dados}
     print(f"  -> Evento: {evento}", flush=True)
+    publish_event(tipo, dados)
 
 @app.before_request
 def log_request() -> None:
@@ -292,6 +294,13 @@ def health():
             "timestamp": time.time(),
         }
     )
+
+
+@app.route("/health/mom", methods=["GET"])
+def health_mom():
+    mom = check_broker()
+    status_code = 200 if mom["status"] in {"ok", "disabled"} else 503
+    return jsonify(mom), status_code
 
 @app.route("/auth/register", methods=["POST"])
 def registrar_usuario():
