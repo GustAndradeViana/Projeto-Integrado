@@ -1,0 +1,27 @@
+Invoke-RestMethod http://localhost:5000/health/mom
+
+
+
+$solicitacao = Invoke-RestMethod `
+  -Method POST `
+  -Uri "http://localhost:5000/solicitacoes" `
+  -ContentType "application/json" `
+  -Body '{
+    "cliente_id": 1,
+    "titulo": "Teste MOM manual",
+    "descricao": "Validar evento assincrono via RabbitMQ",
+    "categoria": "programacao",
+    "orcamento": 150,
+    "prazo_entrega": "2026-05-30"
+  }'
+
+$solicitacao
+
+
+
+
+Invoke-RestMethod `
+  -Method PATCH `
+  -Uri "http://localhost:5000/solicitacoes/$($solicitacao.id)/status" `
+  -ContentType "application/json" `
+  -Body '{"status":"em_andamento"}'

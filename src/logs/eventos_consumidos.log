@@ -2,3 +2,5 @@
 2026-05-25T16:43:28 CONSUMER_INICIADO consumer=quickfreela-audit-consumer exchange=quickfreela.events queue=quickfreela.events.audit
 2026-05-25T16:47:06 EVENTO_PROCESSADO {"consumer": "quickfreela-audit-consumer", "event_id": "935c35b8-241c-410c-b148-4257bfb5f025", "event_type": "solicitacao.criada", "solicitacao_id": 3, "status": "aberta"}
 2026-05-25T16:48:52 EVENTO_PROCESSADO {"consumer": "quickfreela-audit-consumer", "event_id": "1f197cf3-e328-4961-b5e1-d00a6013e172", "event_type": "solicitacao.status_atualizado", "solicitacao_id": 3, "status": "em_andamento"}
+2026-06-01T22:14:04 CONSUMER_INICIADO consumer=quickfreela-audit-consumer exchange=quickfreela.events queue=quickfreela.events.audit
+2026-06-01T22:15:41 EVENTO_PROCESSADO {"consumer": "quickfreela-audit-consumer", "event_id": "0d587200-ad86-44a2-a8ed-ea09cd0cc2e3", "event_type": "solicitacao.criada", "solicitacao_id": 5, "status": "aberta"}

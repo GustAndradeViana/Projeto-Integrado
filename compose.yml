@@ -1,13 +1,16 @@
 services:
   rabbitmq:
-    image: rabbitmq:3.13-management
+    image: docker.io/library/rabbitmq:3.13-management
     container_name: quickfreela-rabbitmq
+    hostname: quickfreela-rabbitmq
+    user: "0"
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_ERLANG_COOKIE: QUICKFREELA_COOKIE_123
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
@@ -15,7 +18,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: docker.io/library/redis:7-alpine
     container_name: quickfreela-redis
     ports:
       - "6379:6379"

@@ -1,0 +1,3 @@
+2026-06-01T21:46:20 CONSUMER_INICIADO consumer=quickfreela-audit-consumer exchange=quickfreela.events queue=quickfreela.events.audit
+2026-06-01T21:53:16 EVENTO_PROCESSADO {"consumer": "quickfreela-audit-consumer", "event_id": "b9ef6adc-6444-431d-b509-db89db4a04ff", "event_type": "solicitacao.criada", "solicitacao_id": 4, "status": "aberta"}
+2026-06-01T21:54:09 EVENTO_PROCESSADO {"consumer": "quickfreela-audit-consumer", "event_id": "c45d77c9-162a-4f5c-ae9f-e24c73a1069a", "event_type": "solicitacao.status_atualizado", "solicitacao_id": 4, "status": "em_andamento"}
