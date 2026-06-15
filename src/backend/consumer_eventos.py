@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pika
 
-from backend.messaging import EXCHANGE_NAME, QUEUE_NAME, RABBITMQ_URL, ensure_topology
+try:
+    from backend.messaging import EXCHANGE_NAME, QUEUE_NAME, RABBITMQ_URL, ensure_topology
+except ModuleNotFoundError:
+    from messaging import EXCHANGE_NAME, QUEUE_NAME, RABBITMQ_URL, ensure_topology
 
 
 CONSUMER_NAME = os.environ.get("QUICKFREELA_CONSUMER", "quickfreela-audit-consumer")

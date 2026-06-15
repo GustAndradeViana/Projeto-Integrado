@@ -8,8 +8,8 @@ Backend inicial em Flask + SQLite para o projeto QuickFreela.
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-docker compose up -d
-python app.py
+docker compose -f compose.yml up -d
+python src/backend/app.py
 ```
 
 Servidor local:
@@ -150,3 +150,58 @@ Documentacao da sprint:
 - `docs/eventos-mom.md`
 - `docs/evidencia-mom.md`
 - `docs/relatorio-integracao-mom.md`
+
+## Sprint 3: App Flutter do Cliente
+
+O app movel do cliente esta em `src/frontend`.
+
+Entregas implementadas:
+
+- Listagem das solicitacoes do cliente.
+- Tela de detalhes com status, dados da demanda e propostas.
+- Tela de criacao de solicitacao integrada ao backend.
+- Tela de estados para demonstrar mudanca automatica de status.
+- Integracao REST com `/solicitacoes` e `/propostas`.
+- Atualizacao assincrona equivalente por polling a cada 6 segundos.
+- Arquitetura documentada em `docs/arquitetura-flutter-sprint3.md`.
+
+Executar backend:
+
+```powershell
+python src/backend/app.py
+```
+
+Executar Flutter no Windows:
+
+```powershell
+cd src/frontend
+flutter pub get
+flutter run -d windows --dart-define=API_BASE_URL=http://localhost:5000
+```
+
+Executar Flutter no emulador Android:
+
+```powershell
+cd src/frontend
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5000
+```
+
+Demonstrar atualizacao automatica:
+
+```powershell
+Invoke-RestMethod `
+  -Method PATCH `
+  -Uri "http://localhost:5000/solicitacoes/1/status" `
+  -ContentType "application/json" `
+  -Body '{"status":"em_andamento"}'
+```
+
+O app atualiza a listagem sozinho em ate 6 segundos.
+
+Gerar APK:
+
+```powershell
+cd src/frontend
+flutter build apk --release --dart-define=API_BASE_URL=http://10.0.2.2:5000
+```

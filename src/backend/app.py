@@ -10,7 +10,10 @@ from flask import Flask, abort, g, jsonify, request
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
-from backend.messaging import check_broker, publish_event
+try:
+    from backend.messaging import check_broker, publish_event
+except ModuleNotFoundError:
+    from messaging import check_broker, publish_event
 
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE = Path(os.environ.get("QUICKFREELA_DB", BASE_DIR / "quickfreela.db"))
