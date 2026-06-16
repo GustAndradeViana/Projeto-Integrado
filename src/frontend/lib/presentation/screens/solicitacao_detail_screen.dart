@@ -70,7 +70,8 @@ class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
                     Text(
                       'Propostas recebidas',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF0F172A),
                           ),
                     ),
                     const SizedBox(height: 10),
@@ -81,7 +82,7 @@ class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
                           icon: Icons.inbox_outlined,
                           title: 'Sem propostas por enquanto',
                           message:
-                              'Quando um prestador enviar uma proposta ela aparece aqui.',
+                              'Quando um prestador enviar uma proposta, ela aparecerá aqui.',
                         ),
                       )
                     else
@@ -100,11 +101,14 @@ class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
 
   Future<void> _updateStatus(String status) async {
     setState(() => _isUpdatingStatus = true);
+
     try {
       await widget.controller.updateStatus(widget.solicitacaoId, status);
+
       if (!mounted) {
         return;
       }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Status atualizado para $status')),
       );
@@ -112,6 +116,7 @@ class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
       if (!mounted) {
         return;
       }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.toString())),
       );
@@ -144,7 +149,7 @@ class _SummaryCard extends StatelessWidget {
                     solicitacao.titulo,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w900,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: const Color(0xFF0F172A),
                         ),
                   ),
                 ),
@@ -163,6 +168,7 @@ class _SummaryCard extends StatelessWidget {
                 _DetailPill(
                   icon: Icons.payments_outlined,
                   label: Formatters.money(solicitacao.orcamento),
+                  isMoney: true,
                 ),
                 _DetailPill(
                   icon: Icons.event_outlined,
@@ -195,17 +201,19 @@ class _DescriptionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Descricao',
+              'Descrição',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF0F172A),
                   ),
             ),
             const SizedBox(height: 10),
             Text(
               solicitacao.descricao,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    height: 1.38,
-                    color: Colors.black.withOpacity(0.72),
+                    height: 1.42,
+                    color: const Color(0xFF334155),
+                    fontWeight: FontWeight.w500,
                   ),
             ),
             if (solicitacao.prestadorNome != null) ...[
@@ -240,6 +248,13 @@ class _ActionsCard extends StatelessWidget {
     if (solicitacao.isAberta) {
       actions.add(
         OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFDC2626),
+            side: const BorderSide(
+              color: Color(0xFFFCA5A5),
+              width: 1.3,
+            ),
+          ),
           onPressed: isLoading ? null : () => onStatusChange('cancelada'),
           icon: const Icon(Icons.close),
           label: const Text('Cancelar'),
@@ -252,7 +267,7 @@ class _ActionsCard extends StatelessWidget {
         ElevatedButton.icon(
           onPressed: isLoading ? null : () => onStatusChange('concluida'),
           icon: const Icon(Icons.done_all),
-          label: const Text('Concluir servico'),
+          label: const Text('Concluir serviço'),
         ),
       );
     }
@@ -264,9 +279,10 @@ class _ActionsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Acao principal',
+              'Ação principal',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF0F172A),
                   ),
             ),
             const SizedBox(height: 12),
@@ -274,9 +290,10 @@ class _ActionsCard extends StatelessWidget {
               const LinearProgressIndicator()
             else if (actions.isEmpty)
               Text(
-                'Nenhuma acao disponivel para este estado.',
+                'Nenhuma ação disponível para este status.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black.withOpacity(0.62),
+                      color: const Color(0xFF64748B),
+                      fontWeight: FontWeight.w600,
                     ),
               )
             else
@@ -316,18 +333,24 @@ class _PropostaCard extends StatelessWidget {
                   child: Text(
                     proposta.prestadorNome ?? 'Prestador #${proposta.prestadorId}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF0F172A),
                         ),
                   ),
                 ),
-                StatusChip(status: proposta.status, label: proposta.statusLabel),
+                StatusChip(
+                  status: proposta.status,
+                  label: proposta.statusLabel,
+                ),
               ],
             ),
             const SizedBox(height: 10),
             Text(
               proposta.mensagem,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.black.withOpacity(0.68),
+                    color: const Color(0xFF334155),
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
                   ),
             ),
             const SizedBox(height: 12),
@@ -338,6 +361,7 @@ class _PropostaCard extends StatelessWidget {
                 _DetailPill(
                   icon: Icons.payments_outlined,
                   label: Formatters.money(proposta.valor),
+                  isMoney: true,
                 ),
                 _DetailPill(
                   icon: Icons.schedule_outlined,
@@ -353,25 +377,44 @@ class _PropostaCard extends StatelessWidget {
 }
 
 class _DetailPill extends StatelessWidget {
-  const _DetailPill({required this.icon, required this.label});
+  const _DetailPill({
+    required this.icon,
+    required this.label,
+    this.isMoney = false,
+  });
 
   final IconData icon;
   final String label;
+  final bool isMoney;
 
   @override
   Widget build(BuildContext context) {
+    final color = isMoney
+        ? const Color(0xFF16A34A)
+        : const Color(0xFF475569);
+
+    final background = isMoney
+        ? const Color(0xFFDCFCE7)
+        : const Color(0xFFF1F5F9);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        color: background,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 17, color: Theme.of(context).colorScheme.secondary),
+          Icon(icon, size: 17, color: color),
           const SizedBox(width: 6),
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
         ],
       ),
     );

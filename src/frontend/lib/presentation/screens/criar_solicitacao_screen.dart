@@ -35,8 +35,12 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const titleColor = Color(0xFF0F172A);
+    const muted = Color(0xFF64748B);
+    const moneyGreen = Color(0xFF16A34A);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Nova solicitacao')),
+      appBar: AppBar(title: const Text('Nova solicitação')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: [
@@ -44,20 +48,21 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
             'Abrir demanda',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: titleColor,
                 ),
           ),
           const SizedBox(height: 6),
           Text(
             'Descreva uma tarefa curta para receber propostas objetivas.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.black.withOpacity(0.62),
+                  color: muted,
+                  fontWeight: FontWeight.w600,
                 ),
           ),
           const SizedBox(height: 18),
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -66,7 +71,7 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
                       controller: _tituloController,
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
-                        labelText: 'Titulo',
+                        labelText: 'Título',
                         prefixIcon: Icon(Icons.title),
                       ),
                       validator: _required,
@@ -77,7 +82,7 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
                       minLines: 4,
                       maxLines: 6,
                       decoration: const InputDecoration(
-                        labelText: 'Descricao',
+                        labelText: 'Descrição',
                         alignLabelWithHint: true,
                         prefixIcon: Icon(Icons.notes_outlined),
                       ),
@@ -93,7 +98,7 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
                       items: const [
                         DropdownMenuItem(
                           value: 'programacao',
-                          child: Text('Programacao'),
+                          child: Text('Programação'),
                         ),
                         DropdownMenuItem(
                           value: 'design',
@@ -101,11 +106,11 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
                         ),
                         DropdownMenuItem(
                           value: 'video',
-                          child: Text('Video'),
+                          child: Text('Vídeo'),
                         ),
                         DropdownMenuItem(
                           value: 'traducao',
-                          child: Text('Traducao'),
+                          child: Text('Tradução'),
                         ),
                         DropdownMenuItem(
                           value: 'geral',
@@ -122,9 +127,21 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
                     TextFormField(
                       controller: _orcamentoController,
                       keyboardType: TextInputType.number,
+                      style: const TextStyle(
+                        color: moneyGreen,
+                        fontWeight: FontWeight.w900,
+                      ),
                       decoration: const InputDecoration(
-                        labelText: 'Orcamento',
-                        prefixIcon: Icon(Icons.payments_outlined),
+                        labelText: 'Orçamento',
+                        prefixText: 'R\$ ',
+                        prefixStyle: TextStyle(
+                          color: moneyGreen,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.payments_outlined,
+                          color: moneyGreen,
+                        ),
                       ),
                       validator: _moneyValidator,
                     ),
@@ -144,7 +161,7 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
                       ElevatedButton.icon(
                         onPressed: _submit,
                         icon: const Icon(Icons.rocket_launch_outlined),
-                        label: const Text('Publicar solicitacao'),
+                        label: const Text('Publicar solicitação'),
                       ),
                   ],
                 ),
@@ -158,20 +175,25 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
 
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Campo obrigatorio';
+      return 'Campo obrigatório';
     }
+
     return null;
   }
 
   String? _moneyValidator(String? value) {
     final requiredError = _required(value);
+
     if (requiredError != null) {
       return requiredError;
     }
+
     final parsed = double.tryParse(value!.replaceAll(',', '.'));
+
     if (parsed == null || parsed < 0) {
-      return 'Informe um valor valido';
+      return 'Informe um valor válido';
     }
+
     return null;
   }
 
@@ -181,6 +203,7 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
     }
 
     setState(() => _isSaving = true);
+
     try {
       final created = await widget.controller.create(
         CriarSolicitacaoInput(
@@ -209,6 +232,7 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
       if (!mounted) {
         return;
       }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.toString())),
       );

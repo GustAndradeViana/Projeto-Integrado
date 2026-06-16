@@ -28,12 +28,12 @@ class _ClienteHomeShellState extends State<ClienteHomeShell> {
   @override
   void initState() {
     super.initState();
+
     _controller = SolicitacoesController(
       listarSolicitacoes: ListarSolicitacoesCliente(widget.repository),
       buscarSolicitacao: BuscarSolicitacao(widget.repository),
       criarSolicitacao: CriarSolicitacao(widget.repository),
-      atualizarStatusSolicitacao:
-          AtualizarStatusSolicitacao(widget.repository),
+      atualizarStatusSolicitacao: AtualizarStatusSolicitacao(widget.repository),
       listarPropostas: ListarPropostasSolicitacao(widget.repository),
       clienteId: AppConfig.clienteId,
     )..start();
@@ -55,8 +55,8 @@ class _ClienteHomeShellState extends State<ClienteHomeShell> {
     return Scaffold(
       body: SafeArea(child: pages[_selectedIndex]),
       floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add_task_outlined),
-        label: const Text('Nova'),
+        icon: const Icon(Icons.add),
+        label: const Text('Nova solicitação'),
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => CriarSolicitacaoScreen(controller: _controller),
@@ -77,7 +77,7 @@ class _ClienteHomeShellState extends State<ClienteHomeShell> {
           NavigationDestination(
             icon: Icon(Icons.query_stats_outlined),
             selectedIcon: Icon(Icons.query_stats),
-            label: 'Estados',
+            label: 'Status',
           ),
         ],
       ),

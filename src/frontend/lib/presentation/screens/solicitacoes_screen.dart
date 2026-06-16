@@ -32,19 +32,19 @@ class SolicitacoesScreen extends StatelessWidget {
                 )
               else if (controller.errorMessage != null &&
                   controller.solicitacoes.isEmpty)
-                SliverFillRemaining(
+                const SliverFillRemaining(
                   child: EmptyState(
                     icon: Icons.cloud_off_outlined,
-                    title: 'Backend indisponivel',
-                    message: 'Confira se o Flask esta rodando na URL da API.',
+                    title: 'Backend indisponível',
+                    message: 'Confira se o Flask está rodando na URL da API.',
                   ),
                 )
               else if (controller.solicitacoes.isEmpty)
                 SliverFillRemaining(
                   child: EmptyState(
                     icon: Icons.assignment_add,
-                    title: 'Nenhuma solicitacao ainda',
-                    message: 'Crie uma demanda rapida para receber propostas.',
+                    title: 'Nenhuma solicitação ainda',
+                    message: 'Crie uma demanda rápida para receber propostas.',
                     action: FilledButton.icon(
                       onPressed: () {
                         Navigator.of(context).push(
@@ -68,6 +68,7 @@ class SolicitacoesScreen extends StatelessWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final solicitacao = controller.solicitacoes[index];
+
                       return SolicitacaoCard(
                         solicitacao: solicitacao,
                         onTap: () {
@@ -99,9 +100,14 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const titleColor = Color(0xFF0F172A);
+    const muted = Color(0xFF64748B);
+    const border = Color(0xFFE2E8F0);
+    const surfaceSoft = Color(0xFFF1F5F9);
+
     final titleStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
           fontWeight: FontWeight.w900,
-          color: Theme.of(context).colorScheme.primary,
+          color: titleColor,
         );
 
     return Padding(
@@ -116,11 +122,12 @@ class _Header extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('QuickFreela', style: titleStyle),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       'Cliente: Ana Cliente',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.black.withOpacity(0.58),
+                            color: muted,
+                            fontWeight: FontWeight.w600,
                           ),
                     ),
                   ],
@@ -143,27 +150,48 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 18),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(8),
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: border),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'Painel de demandas',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: surfaceSoft,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.dashboard_customize_outlined,
+                    color: titleColor,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  Formatters.clock(controller.lastSync),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.74),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Painel de demandas',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: titleColor,
+                              fontWeight: FontWeight.w900,
+                            ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        Formatters.clock(controller.lastSync),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: muted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -175,21 +203,21 @@ class _Header extends StatelessWidget {
                 label: 'Abertas',
                 value: controller.countByStatus('aberta').toString(),
                 icon: Icons.radio_button_checked,
-                color: const Color(0xFF2A9D8F),
+                color: const Color(0xFF16A34A),
               ),
               const SizedBox(width: 10),
               MetricTile(
                 label: 'Andamento',
                 value: controller.countByStatus('em_andamento').toString(),
                 icon: Icons.bolt_outlined,
-                color: const Color(0xFFF4A261),
+                color: const Color(0xFFF59E0B),
               ),
               const SizedBox(width: 10),
               MetricTile(
-                label: 'Concluidas',
+                label: 'Concluídas',
                 value: controller.countByStatus('concluida').toString(),
                 icon: Icons.done_all_outlined,
-                color: const Color(0xFF3A7D44),
+                color: const Color(0xFF0F172A),
               ),
             ],
           ),
@@ -200,6 +228,7 @@ class _Header extends StatelessWidget {
               controller.errorMessage!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.w700,
                   ),
             ),
           ],

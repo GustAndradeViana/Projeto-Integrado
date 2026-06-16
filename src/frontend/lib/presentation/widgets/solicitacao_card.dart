@@ -14,11 +14,19 @@ class SolicitacaoCard extends StatelessWidget {
   final Solicitacao solicitacao;
   final VoidCallback onTap;
 
+  static const _title = Color(0xFF0F172A);
+  static const _text = Color(0xFF334155);
+  static const _muted = Color(0xFF64748B);
+  static const _border = Color(0xFFE2E8F0);
+  static const _softSurface = Color(0xFFF8FAFC);
+  static const _moneyGreen = Color(0xFF15803D);
+  static const _moneyGreenSoft = Color(0xFFF0FDF4);
+
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(22),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -34,7 +42,9 @@ class SolicitacaoCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            color: _title,
+                            fontWeight: FontWeight.w900,
+                            height: 1.15,
                           ),
                     ),
                   ),
@@ -51,7 +61,9 @@ class SolicitacaoCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black.withOpacity(0.64),
+                      color: _text,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
                     ),
               ),
               const SizedBox(height: 14),
@@ -59,17 +71,24 @@ class SolicitacaoCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _InfoPill(
+                  _CardPill(
                     icon: Icons.payments_outlined,
                     label: Formatters.money(solicitacao.orcamento),
+                    foregroundColor: _moneyGreen,
+                    backgroundColor: _moneyGreenSoft,
+                    strong: true,
                   ),
-                  _InfoPill(
-                    icon: Icons.schedule_outlined,
+                  _CardPill(
+                    icon: Icons.event_outlined,
                     label: Formatters.shortDate(solicitacao.prazoEntrega),
+                    foregroundColor: _muted,
+                    backgroundColor: _softSurface,
                   ),
-                  _InfoPill(
+                  _CardPill(
                     icon: Icons.category_outlined,
-                    label: solicitacao.categoria,
+                    label: _formatCategoria(solicitacao.categoria),
+                    foregroundColor: _muted,
+                    backgroundColor: _softSurface,
                   ),
                 ],
               ),
@@ -79,30 +98,72 @@ class SolicitacaoCard extends StatelessWidget {
       ),
     );
   }
+
+  String _formatCategoria(String value) {
+    switch (value) {
+      case 'programacao':
+        return 'Programação';
+      case 'design':
+        return 'Design';
+      case 'video':
+        return 'Vídeo';
+      case 'traducao':
+        return 'Tradução';
+      case 'geral':
+        return 'Geral';
+      default:
+        return value;
+    }
+  }
 }
 
-class _InfoPill extends StatelessWidget {
-  const _InfoPill({required this.icon, required this.label});
+class _CardPill extends StatelessWidget {
+  const _CardPill({
+    required this.icon,
+    required this.label,
+    required this.foregroundColor,
+    required this.backgroundColor,
+    this.strong = false,
+  });
 
   final IconData icon;
   final String label;
+  final Color foregroundColor;
+  final Color backgroundColor;
+  final bool strong;
+
+  static const _border = Color(0xFFE2E8F0);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 11,
+        vertical: 8,
+      ),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: strong ? Colors.transparent : _border,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.black.withOpacity(0.56)),
+          Icon(
+            icon,
+            size: 16,
+            color: foregroundColor,
+          ),
           const SizedBox(width: 6),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelMedium,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: foregroundColor,
+                  fontWeight: strong ? FontWeight.w900 : FontWeight.w700,
+                  letterSpacing: strong ? -0.2 : 0,
+                ),
           ),
         ],
       ),
