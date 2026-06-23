@@ -13,7 +13,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 try:
     from backend.messaging import check_broker, publish_event
 except ModuleNotFoundError:
-    from messaging import check_broker, publish_event
+    try:
+        from messaging import check_broker, publish_event
+    except ModuleNotFoundError:
+        def check_broker():
+            return {"status": "disabled"}
+        def publish_event(tipo, dados):
+            pass
 
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE = Path(os.environ.get("QUICKFREELA_DB", BASE_DIR / "quickfreela.db"))
@@ -35,19 +41,16 @@ def get_db() -> sqlite3.Connection:
         g.db = conn
     return g.db
 
-
 @app.teardown_appcontext
 def close_db(_: Exception | None = None) -> None:
     db = g.pop("db", None)
     if db is not None:
         db.close()
 
-
 def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
     if row is None:
         return None
     return dict(row)
-
 
 def init_db() -> None:
     db = get_db()
@@ -95,11 +98,20 @@ def init_db() -> None:
             FOREIGN KEY (prestador_id) REFERENCES usuarios(id) ON DELETE CASCADE,
             UNIQUE (solicitacao_id, prestador_id)
         );
+
+        CREATE TABLE IF NOT EXISTS mensagens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            solicitacao_id INTEGER NOT NULL,
+            remetente_id INTEGER NOT NULL,
+            conteudo TEXT NOT NULL,
+            criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (solicitacao_id) REFERENCES solicitacoes(id) ON DELETE CASCADE,
+            FOREIGN KEY (remetente_id) REFERENCES usuarios(id) ON DELETE CASCADE
+        );
         """
     )
     db.commit()
     seed_db()
-
 
 def seed_db() -> None:
     db = get_db()
@@ -154,13 +166,11 @@ def json_body() -> dict[str, Any]:
         abort(400, description="Body JSON invalido ou ausente.")
     return data
 
-
 def required_str(data: dict[str, Any], field: str) -> str:
     value = data.get(field)
     if not isinstance(value, str) or not value.strip():
         abort(400, description=f"Campo '{field}' e obrigatorio.")
     return value.strip()
-
 
 def optional_str(data: dict[str, Any], field: str, default: str | None = None) -> str | None:
     value = data.get(field, default)
@@ -169,7 +179,6 @@ def optional_str(data: dict[str, Any], field: str, default: str | None = None) -
     if not isinstance(value, str):
         abort(400, description=f"Campo '{field}' deve ser texto.")
     return value.strip()
-
 
 def required_float(data: dict[str, Any], field: str) -> float:
     if field not in data:
@@ -182,7 +191,6 @@ def required_float(data: dict[str, Any], field: str) -> float:
         abort(400, description=f"Campo '{field}' nao pode ser negativo.")
     return value
 
-
 def required_int(data: dict[str, Any], field: str, positive: bool = False) -> int:
     if field not in data:
         abort(400, description=f"Campo '{field}' e obrigatorio.")
@@ -194,20 +202,17 @@ def required_int(data: dict[str, Any], field: str, positive: bool = False) -> in
         abort(400, description=f"Campo '{field}' deve ser maior que zero.")
     return value
 
-
 def validate_email(email: str) -> str:
     email = email.strip().lower()
     if not EMAIL_RE.match(email):
         abort(400, description="Campo 'email' deve ser um email valido.")
     return email
 
-
 def validate_choice(value: str, field: str, allowed: set[str]) -> str:
     if value not in allowed:
         allowed_values = ", ".join(sorted(allowed))
         abort(400, description=f"Campo '{field}' deve ser um destes valores: {allowed_values}.")
     return value
-
 
 def get_usuario_or_404(usuario_id: int, perfil: str | None = None) -> dict[str, Any]:
     row = get_db().execute(
@@ -220,7 +225,6 @@ def get_usuario_or_404(usuario_id: int, perfil: str | None = None) -> dict[str, 
     if perfil is not None and usuario["perfil"] != perfil:
         abort(400, description=f"Usuario id={usuario_id} precisa ter perfil '{perfil}'.")
     return usuario
-
 
 def get_solicitacao_or_404(solicitacao_id: int) -> dict[str, Any]:
     row = get_db().execute(
@@ -238,7 +242,6 @@ def get_solicitacao_or_404(solicitacao_id: int) -> dict[str, Any]:
         abort(404, description=f"Solicitacao com id={solicitacao_id} nao encontrada.")
     return solicitacao
 
-
 def get_proposta_or_404(proposta_id: int) -> dict[str, Any]:
     row = get_db().execute(
         """
@@ -255,9 +258,7 @@ def get_proposta_or_404(proposta_id: int) -> dict[str, Any]:
         abort(404, description=f"Proposta com id={proposta_id} nao encontrada.")
     return proposta
 
-
 def publicar_evento(tipo: str, dados: dict[str, Any]) -> None:
-    """Publica evento de dominio no RabbitMQ sem bloquear o fluxo REST."""
     evento = {"tipo": tipo, "dados": dados}
     print(f"  -> Evento: {evento}", flush=True)
     publish_event(tipo, dados)
@@ -272,13 +273,15 @@ def index():
     return jsonify(
         {
             "nome": "QuickFreela API",
-            "versao": "1.0.0",
+            "versao": "1.1.0",
             "endpoints": {
                 "health": "/health",
                 "usuarios": "/usuarios",
                 "solicitacoes": "/solicitacoes",
                 "propostas": "/propostas",
+                "mensagens": "/solicitacoes/<id>/mensagens",
                 "login": "/auth/login",
+                "register": "/auth/register",
             },
         }
     )
@@ -290,14 +293,12 @@ def health():
         {
             "status": "ok",
             "usuarios": db.execute("SELECT COUNT(*) AS total FROM usuarios").fetchone()["total"],
-            "solicitacoes": db.execute("SELECT COUNT(*) AS total FROM solicitacoes").fetchone()[
-                "total"
-            ],
+            "solicitacoes": db.execute("SELECT COUNT(*) AS total FROM solicitacoes").fetchone()["total"],
             "propostas": db.execute("SELECT COUNT(*) AS total FROM propostas").fetchone()["total"],
+            "mensagens": db.execute("SELECT COUNT(*) AS total FROM mensagens").fetchone()["total"],
             "timestamp": time.time(),
         }
     )
-
 
 @app.route("/health/mom", methods=["GET"])
 def health_mom():
@@ -341,7 +342,6 @@ def listar_usuarios():
 
     rows = get_db().execute(sql, params).fetchall()
     return jsonify([row_to_dict(row) for row in rows]), 200
-
 
 @app.route("/usuarios/<int:usuario_id>", methods=["GET"])
 def buscar_usuario(usuario_id: int):
@@ -400,7 +400,6 @@ def atualizar_usuario(usuario_id: int):
     publicar_evento("usuario.atualizado", usuario)
     return jsonify(usuario), 200
 
-
 @app.route("/usuarios/<int:usuario_id>", methods=["DELETE"])
 def remover_usuario(usuario_id: int):
     get_usuario_or_404(usuario_id)
@@ -431,7 +430,7 @@ def listar_solicitacoes():
     """
     if filtros:
         sql += " WHERE " + " AND ".join(filtros)
-    sql += " ORDER BY s.id"
+    sql += " ORDER BY s.id DESC"
 
     rows = get_db().execute(sql, params).fetchall()
     return jsonify([row_to_dict(row) for row in rows]), 200
@@ -499,7 +498,6 @@ def atualizar_solicitacao(solicitacao_id: int):
     publicar_evento("solicitacao.atualizada", solicitacao)
     return jsonify(solicitacao), 200
 
-
 @app.route("/solicitacoes/<int:solicitacao_id>/status", methods=["PATCH"])
 def atualizar_status_solicitacao(solicitacao_id: int):
     get_solicitacao_or_404(solicitacao_id)
@@ -519,7 +517,6 @@ def atualizar_status_solicitacao(solicitacao_id: int):
     solicitacao = get_solicitacao_or_404(solicitacao_id)
     publicar_evento("solicitacao.status_atualizado", solicitacao)
     return jsonify(solicitacao), 200
-
 
 @app.route("/solicitacoes/<int:solicitacao_id>", methods=["DELETE"])
 def remover_solicitacao(solicitacao_id: int):
@@ -551,7 +548,7 @@ def listar_propostas():
     """
     if filtros:
         sql += " WHERE " + " AND ".join(filtros)
-    sql += " ORDER BY p.id"
+    sql += " ORDER BY p.id DESC"
 
     rows = get_db().execute(sql, params).fetchall()
     return jsonify([row_to_dict(row) for row in rows]), 200
@@ -690,6 +687,58 @@ def remover_proposta(proposta_id: int):
     publicar_evento("proposta.removida", {"id": proposta_id})
     return "", 204
 
+@app.route("/solicitacoes/<int:solicitacao_id>/mensagens", methods=["GET"])
+def listar_mensagens(solicitacao_id: int):
+    get_solicitacao_or_404(solicitacao_id)
+    since_id = request.args.get("since_id", 0)
+    rows = get_db().execute(
+        """
+        SELECT m.id, m.solicitacao_id, m.remetente_id, m.conteudo, m.criado_em,
+               u.nome AS remetente_nome, u.perfil AS remetente_perfil
+        FROM mensagens m
+        JOIN usuarios u ON u.id = m.remetente_id
+        WHERE m.solicitacao_id = ? AND m.id > ?
+        ORDER BY m.id ASC
+        """,
+        (solicitacao_id, since_id),
+    ).fetchall()
+    return jsonify([row_to_dict(row) for row in rows]), 200
+
+@app.route("/solicitacoes/<int:solicitacao_id>/mensagens", methods=["POST"])
+def enviar_mensagem(solicitacao_id: int):
+    solicitacao = get_solicitacao_or_404(solicitacao_id)
+    data = json_body()
+    remetente_id = required_int(data, "remetente_id", positive=True)
+    conteudo = required_str(data, "conteudo")
+
+    usuario = get_usuario_or_404(remetente_id)
+    participantes = {solicitacao["cliente_id"], solicitacao["prestador_id"]}
+    if remetente_id not in participantes:
+        abort(403, description="Apenas participantes da solicitacao podem enviar mensagens.")
+
+    cursor = get_db().execute(
+        """
+        INSERT INTO mensagens (solicitacao_id, remetente_id, conteudo)
+        VALUES (?, ?, ?)
+        """,
+        (solicitacao_id, remetente_id, conteudo),
+    )
+    get_db().commit()
+
+    row = get_db().execute(
+        """
+        SELECT m.id, m.solicitacao_id, m.remetente_id, m.conteudo, m.criado_em,
+               u.nome AS remetente_nome, u.perfil AS remetente_perfil
+        FROM mensagens m
+        JOIN usuarios u ON u.id = m.remetente_id
+        WHERE m.id = ?
+        """,
+        (cursor.lastrowid,),
+    ).fetchone()
+    mensagem = row_to_dict(row)
+    publicar_evento("mensagem.enviada", mensagem)
+    return jsonify(mensagem), 201
+
 @app.errorhandler(HTTPException)
 def handle_http_error(error: HTTPException):
     return jsonify({"erro": error.description}), error.code
@@ -703,7 +752,7 @@ with app.app_context():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  QuickFreela API")
+    print("  QuickFreela API v1.1")
     print("  Servidor iniciado em http://0.0.0.0:5000")
     print("  Emulador Android: http://10.0.2.2:5000")
     print(f"  Banco SQLite: {DATABASE}")

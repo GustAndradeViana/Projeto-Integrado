@@ -31,18 +31,18 @@ class MetricTile extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style:
+                  Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 2),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.black.withOpacity(0.56),
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .labelMedium
+                  ?.copyWith(color: Colors.black.withOpacity(0.56)),
             ),
           ],
         ),

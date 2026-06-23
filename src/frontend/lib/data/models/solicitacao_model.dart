@@ -39,22 +39,16 @@ class SolicitacaoModel extends Solicitacao {
 }
 
 int _asInt(dynamic value) {
-  if (value is int) {
-    return value;
-  }
+  if (value is int) return value;
   return int.tryParse(value?.toString() ?? '') ?? 0;
 }
 
 int? _asNullableInt(dynamic value) {
-  if (value == null) {
-    return null;
-  }
+  if (value == null) return null;
   return _asInt(value);
 }
 
 double _asDouble(dynamic value) {
-  if (value is num) {
-    return value.toDouble();
-  }
+  if (value is num) return value.toDouble();
   return double.tryParse(value?.toString() ?? '') ?? 0;
 }

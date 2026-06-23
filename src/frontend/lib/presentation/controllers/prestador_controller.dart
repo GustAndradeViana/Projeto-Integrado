@@ -1,31 +1,29 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../../domain/entities/criar_solicitacao_input.dart';
 import '../../domain/entities/proposta.dart';
 import '../../domain/entities/solicitacao.dart';
 import '../../domain/usecases/usecases.dart';
 
-class SolicitacoesController extends ChangeNotifier {
-  SolicitacoesController({
-    required this.listarSolicitacoes,
+class PrestadorController extends ChangeNotifier {
+  PrestadorController({
+    required this.listarSolicitacoesAbertas,
     required this.buscarSolicitacao,
-    required this.criarSolicitacao,
-    required this.atualizarStatusSolicitacao,
     required this.listarPropostas,
-    required this.aceitarProposta,
-    required this.clienteId,
+    required this.criarProposta,
+    required this.listarPropostasPrestador,
+    required this.prestadorId,
   });
 
-  final ListarSolicitacoesCliente listarSolicitacoes;
+  final ListarSolicitacoesAbertas listarSolicitacoesAbertas;
   final BuscarSolicitacao buscarSolicitacao;
-  final CriarSolicitacao criarSolicitacao;
-  final AtualizarStatusSolicitacao atualizarStatusSolicitacao;
   final ListarPropostasSolicitacao listarPropostas;
-  final AceitarPropostaUseCase aceitarProposta;
-  final int clienteId;
+  final CriarPropostaUseCase criarProposta;
+  final ListarPropostasPrestador listarPropostasPrestador;
+  final int prestadorId;
 
   final List<Solicitacao> _solicitacoes = [];
   final Map<int, List<Proposta>> _propostasPorSolicitacao = {};
+  List<Proposta> _minhasPropostas = [];
 
   Timer? _pollingTimer;
   bool _isLoading = false;
@@ -34,6 +32,7 @@ class SolicitacoesController extends ChangeNotifier {
   DateTime? _lastSync;
 
   List<Solicitacao> get solicitacoes => List.unmodifiable(_solicitacoes);
+  List<Proposta> get minhasPropostas => List.unmodifiable(_minhasPropostas);
   bool get isLoading => _isLoading;
   bool get isRefreshing => _isRefreshing;
   String? get errorMessage => _errorMessage;
@@ -50,8 +49,16 @@ class SolicitacoesController extends ChangeNotifier {
     return null;
   }
 
-  int countByStatus(String status) {
-    return _solicitacoes.where((item) => item.status == status).length;
+  bool jaMandouProposta(int solicitacaoId) {
+    return _minhasPropostas.any((p) => p.solicitacaoId == solicitacaoId);
+  }
+
+  Proposta? minhaProposta(int solicitacaoId) {
+    try {
+      return _minhasPropostas.firstWhere((p) => p.solicitacaoId == solicitacaoId);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> start() async {
@@ -72,13 +79,16 @@ class SolicitacoesController extends ChangeNotifier {
       notifyListeners();
     }
     try {
-      final result = await listarSolicitacoes(clienteId);
+      final results = await Future.wait([
+        listarSolicitacoesAbertas(),
+        listarPropostasPrestador(prestadorId),
+      ]);
       _solicitacoes
         ..clear()
-        ..addAll(result);
+        ..addAll(results[0] as List<Solicitacao>);
+      _minhasPropostas = results[1] as List<Proposta>;
       _lastSync = DateTime.now();
       _errorMessage = null;
-      await _refreshLoadedProposals();
     } catch (error) {
       _errorMessage = error.toString();
     } finally {
@@ -88,21 +98,15 @@ class SolicitacoesController extends ChangeNotifier {
     }
   }
 
-  Future<Solicitacao> create(CriarSolicitacaoInput input) async {
-    final created = await criarSolicitacao(input);
-    _solicitacoes.insert(0, created);
-    _lastSync = DateTime.now();
-    notifyListeners();
-    return created;
-  }
-
   Future<void> loadDetails(int solicitacaoId) async {
     try {
       final solicitacao = await buscarSolicitacao(solicitacaoId);
-      _replaceSolicitacao(solicitacao);
+      final index = _solicitacoes.indexWhere((s) => s.id == solicitacaoId);
+      if (index >= 0) {
+        _solicitacoes[index] = solicitacao;
+      }
       _propostasPorSolicitacao[solicitacaoId] = await listarPropostas(solicitacaoId);
       _lastSync = DateTime.now();
-      _errorMessage = null;
     } catch (error) {
       _errorMessage = error.toString();
     } finally {
@@ -110,32 +114,22 @@ class SolicitacoesController extends ChangeNotifier {
     }
   }
 
-  Future<void> updateStatus(int solicitacaoId, String status) async {
-    final updated = await atualizarStatusSolicitacao(solicitacaoId, status);
-    _replaceSolicitacao(updated);
-    _lastSync = DateTime.now();
+  Future<Proposta> enviarProposta({
+    required int solicitacaoId,
+    required double valor,
+    required int prazoDias,
+    required String mensagem,
+  }) async {
+    final proposta = await criarProposta(
+      solicitacaoId: solicitacaoId,
+      prestadorId: prestadorId,
+      valor: valor,
+      prazoDias: prazoDias,
+      mensagem: mensagem,
+    );
+    _minhasPropostas.add(proposta);
     notifyListeners();
-  }
-
-  Future<void> aceitarPropostaDaSolicitacao(int solicitacaoId, int propostaId) async {
-    await aceitarProposta(solicitacaoId, propostaId, clienteId);
-    await loadDetails(solicitacaoId);
-  }
-
-  void _replaceSolicitacao(Solicitacao solicitacao) {
-    final index = _solicitacoes.indexWhere((item) => item.id == solicitacao.id);
-    if (index == -1) {
-      _solicitacoes.insert(0, solicitacao);
-    } else {
-      _solicitacoes[index] = solicitacao;
-    }
-  }
-
-  Future<void> _refreshLoadedProposals() async {
-    final ids = _propostasPorSolicitacao.keys.toList();
-    for (final id in ids) {
-      _propostasPorSolicitacao[id] = await listarPropostas(id);
-    }
+    return proposta;
   }
 
   @override

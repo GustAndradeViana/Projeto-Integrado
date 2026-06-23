@@ -25,6 +25,9 @@ class Proposta {
   final String? criadoEm;
   final String? atualizadoEm;
 
+  bool get isPendente => status == 'pendente';
+  bool get isAceita => status == 'aceita';
+
   String get statusLabel {
     switch (status) {
       case 'pendente':

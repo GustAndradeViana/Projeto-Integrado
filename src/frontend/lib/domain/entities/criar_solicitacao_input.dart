@@ -22,8 +22,7 @@ class CriarSolicitacaoInput {
       'descricao': descricao,
       'categoria': categoria,
       'orcamento': orcamento,
-      if (prazoEntrega != null && prazoEntrega!.isNotEmpty)
-        'prazo_entrega': prazoEntrega,
+      if (prazoEntrega != null && prazoEntrega!.isNotEmpty) 'prazo_entrega': prazoEntrega,
     };
   }
 }

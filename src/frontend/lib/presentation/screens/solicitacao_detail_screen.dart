@@ -1,29 +1,32 @@
 import 'package:flutter/material.dart';
-
 import '../../core/utils/formatters.dart';
 import '../../domain/entities/proposta.dart';
 import '../../domain/entities/solicitacao.dart';
+import '../../domain/repositories/quickfreela_repository.dart';
 import '../controllers/solicitacoes_controller.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/status_chip.dart';
+import 'chat_screen.dart';
 
 class SolicitacaoDetailScreen extends StatefulWidget {
   const SolicitacaoDetailScreen({
     required this.controller,
     required this.solicitacaoId,
+    required this.repository,
     super.key,
   });
 
   final SolicitacoesController controller;
   final int solicitacaoId;
+  final QuickFreelaRepository repository;
 
   @override
-  State<SolicitacaoDetailScreen> createState() =>
-      _SolicitacaoDetailScreenState();
+  State<SolicitacaoDetailScreen> createState() => _SolicitacaoDetailScreenState();
 }
 
 class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
   bool _isUpdatingStatus = false;
+  bool _isAccepting = false;
 
   @override
   void initState() {
@@ -37,17 +40,21 @@ class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
       animation: widget.controller,
       builder: (context, _) {
         final solicitacao = widget.controller.findById(widget.solicitacaoId);
-        final propostas =
-            widget.controller.propostasDaSolicitacao(widget.solicitacaoId);
+        final propostas = widget.controller.propostasDaSolicitacao(widget.solicitacaoId);
 
         return Scaffold(
           appBar: AppBar(
             title: const Text('Detalhes'),
             actions: [
+              if (solicitacao != null && solicitacao.isEmAndamento)
+                IconButton(
+                  tooltip: 'Abrir chat',
+                  onPressed: () => _openChat(solicitacao),
+                  icon: const Icon(Icons.chat_bubble_outline),
+                ),
               IconButton(
                 tooltip: 'Atualizar',
-                onPressed: () =>
-                    widget.controller.loadDetails(widget.solicitacaoId),
+                onPressed: () => widget.controller.loadDetails(widget.solicitacaoId),
                 icon: const Icon(Icons.sync_outlined),
               ),
             ],
@@ -65,6 +72,7 @@ class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
                       solicitacao: solicitacao,
                       isLoading: _isUpdatingStatus,
                       onStatusChange: _updateStatus,
+                      onOpenChat: () => _openChat(solicitacao),
                     ),
                     const SizedBox(height: 18),
                     Text(
@@ -81,15 +89,21 @@ class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
                         child: EmptyState(
                           icon: Icons.inbox_outlined,
                           title: 'Sem propostas por enquanto',
-                          message:
-                              'Quando um prestador enviar uma proposta, ela aparecerá aqui.',
+                          message: 'Quando um prestador enviar uma proposta, ela aparecerá aqui.',
                         ),
                       )
                     else
                       ...propostas.map(
                         (proposta) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          child: _PropostaCard(proposta: proposta),
+                          child: _PropostaCard(
+                            proposta: proposta,
+                            solicitacao: solicitacao,
+                            isAccepting: _isAccepting,
+                            onAceitar: solicitacao.isAberta && proposta.isPendente
+                                ? () => _aceitar(solicitacao, proposta)
+                                : null,
+                          ),
                         ),
                       ),
                   ],
@@ -99,38 +113,57 @@ class _SolicitacaoDetailScreenState extends State<SolicitacaoDetailScreen> {
     );
   }
 
+  void _openChat(Solicitacao solicitacao) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ChatScreen(
+          solicitacao: solicitacao,
+          usuarioId: widget.controller.clienteId,
+          repository: widget.repository,
+        ),
+      ),
+    );
+  }
+
   Future<void> _updateStatus(String status) async {
     setState(() => _isUpdatingStatus = true);
-
     try {
       await widget.controller.updateStatus(widget.solicitacaoId, status);
-
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Status atualizado para $status')),
       );
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
-      if (mounted) {
-        setState(() => _isUpdatingStatus = false);
-      }
+      if (mounted) setState(() => _isUpdatingStatus = false);
+    }
+  }
+
+  Future<void> _aceitar(Solicitacao solicitacao, Proposta proposta) async {
+    setState(() => _isAccepting = true);
+    try {
+      await widget.controller.aceitarPropostaDaSolicitacao(solicitacao.id, proposta.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Proposta aceita! O chat foi aberto.')),
+      );
+      final updated = widget.controller.findById(solicitacao.id);
+      if (updated != null && mounted) _openChat(updated);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _isAccepting = false);
     }
   }
 }
 
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.solicitacao});
-
   final Solicitacao solicitacao;
 
   @override
@@ -154,10 +187,7 @@ class _SummaryCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                StatusChip(
-                  status: solicitacao.status,
-                  label: solicitacao.statusLabel,
-                ),
+                StatusChip(status: solicitacao.status, label: solicitacao.statusLabel),
               ],
             ),
             const SizedBox(height: 16),
@@ -189,7 +219,6 @@ class _SummaryCard extends StatelessWidget {
 
 class _DescriptionCard extends StatelessWidget {
   const _DescriptionCard({required this.solicitacao});
-
   final Solicitacao solicitacao;
 
   @override
@@ -235,11 +264,13 @@ class _ActionsCard extends StatelessWidget {
     required this.solicitacao,
     required this.isLoading,
     required this.onStatusChange,
+    required this.onOpenChat,
   });
 
   final Solicitacao solicitacao;
   final bool isLoading;
   final ValueChanged<String> onStatusChange;
+  final VoidCallback onOpenChat;
 
   @override
   Widget build(BuildContext context) {
@@ -250,10 +281,7 @@ class _ActionsCard extends StatelessWidget {
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFFDC2626),
-            side: const BorderSide(
-              color: Color(0xFFFCA5A5),
-              width: 1.3,
-            ),
+            side: const BorderSide(color: Color(0xFFFCA5A5), width: 1.3),
           ),
           onPressed: isLoading ? null : () => onStatusChange('cancelada'),
           icon: const Icon(Icons.close),
@@ -263,13 +291,19 @@ class _ActionsCard extends StatelessWidget {
     }
 
     if (solicitacao.isEmAndamento) {
-      actions.add(
+      actions.addAll([
         ElevatedButton.icon(
           onPressed: isLoading ? null : () => onStatusChange('concluida'),
           icon: const Icon(Icons.done_all),
           label: const Text('Concluir serviço'),
         ),
-      );
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: onOpenChat,
+          icon: const Icon(Icons.chat_bubble_outline),
+          label: const Text('Abrir chat'),
+        ),
+      ]);
     }
 
     return Card(
@@ -297,16 +331,7 @@ class _ActionsCard extends StatelessWidget {
                     ),
               )
             else
-              Column(
-                children: actions
-                    .map(
-                      (action) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: action,
-                      ),
-                    )
-                    .toList(),
-              ),
+              Column(children: actions),
           ],
         ),
       ),
@@ -315,9 +340,17 @@ class _ActionsCard extends StatelessWidget {
 }
 
 class _PropostaCard extends StatelessWidget {
-  const _PropostaCard({required this.proposta});
+  const _PropostaCard({
+    required this.proposta,
+    required this.solicitacao,
+    required this.isAccepting,
+    this.onAceitar,
+  });
 
   final Proposta proposta;
+  final Solicitacao solicitacao;
+  final bool isAccepting;
+  final VoidCallback? onAceitar;
 
   @override
   Widget build(BuildContext context) {
@@ -338,10 +371,7 @@ class _PropostaCard extends StatelessWidget {
                         ),
                   ),
                 ),
-                StatusChip(
-                  status: proposta.status,
-                  label: proposta.statusLabel,
-                ),
+                StatusChip(status: proposta.status, label: proposta.statusLabel),
               ],
             ),
             const SizedBox(height: 10),
@@ -369,6 +399,21 @@ class _PropostaCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (onAceitar != null) ...[
+              const SizedBox(height: 14),
+              if (isAccepting)
+                const LinearProgressIndicator()
+              else
+                ElevatedButton.icon(
+                  onPressed: onAceitar,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    minimumSize: const Size.fromHeight(44),
+                  ),
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Aceitar proposta'),
+                ),
+            ],
           ],
         ),
       ),
@@ -377,32 +422,19 @@ class _PropostaCard extends StatelessWidget {
 }
 
 class _DetailPill extends StatelessWidget {
-  const _DetailPill({
-    required this.icon,
-    required this.label,
-    this.isMoney = false,
-  });
-
+  const _DetailPill({required this.icon, required this.label, this.isMoney = false});
   final IconData icon;
   final String label;
   final bool isMoney;
 
   @override
   Widget build(BuildContext context) {
-    final color = isMoney
-        ? const Color(0xFF16A34A)
-        : const Color(0xFF475569);
-
-    final background = isMoney
-        ? const Color(0xFFDCFCE7)
-        : const Color(0xFFF1F5F9);
+    final color = isMoney ? const Color(0xFF16A34A) : const Color(0xFF475569);
+    final background = isMoney ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(999)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

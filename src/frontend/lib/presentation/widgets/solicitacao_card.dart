@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../core/utils/formatters.dart';
 import '../../domain/entities/solicitacao.dart';
 import 'status_chip.dart';
@@ -8,11 +7,13 @@ class SolicitacaoCard extends StatelessWidget {
   const SolicitacaoCard({
     required this.solicitacao,
     required this.onTap,
+    this.trailing,
     super.key,
   });
 
   final Solicitacao solicitacao;
   final VoidCallback onTap;
+  final Widget? trailing;
 
   static const _title = Color(0xFF0F172A);
   static const _text = Color(0xFF334155);
@@ -49,10 +50,7 @@ class SolicitacaoCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  StatusChip(
-                    status: solicitacao.status,
-                    label: solicitacao.statusLabel,
-                  ),
+                  StatusChip(status: solicitacao.status, label: solicitacao.statusLabel),
                 ],
               ),
               const SizedBox(height: 10),
@@ -90,8 +88,16 @@ class SolicitacaoCard extends StatelessWidget {
                     foregroundColor: _muted,
                     backgroundColor: _softSurface,
                   ),
+                  if (solicitacao.clienteNome != null)
+                    _CardPill(
+                      icon: Icons.person_outline,
+                      label: solicitacao.clienteNome!,
+                      foregroundColor: _muted,
+                      backgroundColor: _softSurface,
+                    ),
                 ],
               ),
+              if (trailing != null) ...[const SizedBox(height: 12), trailing!],
             ],
           ),
         ),
@@ -137,25 +143,16 @@ class _CardPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: strong ? Colors.transparent : _border,
-        ),
+        border: Border.all(color: strong ? Colors.transparent : _border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 16,
-            color: foregroundColor,
-          ),
+          Icon(icon, size: 16, color: foregroundColor),
           const SizedBox(width: 6),
           Text(
             label,

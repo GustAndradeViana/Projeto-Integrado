@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/config/app_config.dart';
 import '../../domain/repositories/quickfreela_repository.dart';
-import '../../domain/usecases/atualizar_status_solicitacao.dart';
-import '../../domain/usecases/buscar_solicitacao.dart';
-import '../../domain/usecases/criar_solicitacao.dart';
-import '../../domain/usecases/listar_propostas_solicitacao.dart';
-import '../../domain/usecases/listar_solicitacoes_cliente.dart';
+import '../../domain/usecases/usecases.dart';
 import '../controllers/solicitacoes_controller.dart';
 import 'criar_solicitacao_screen.dart';
 import 'solicitacoes_screen.dart';
