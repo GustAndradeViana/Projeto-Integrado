@@ -2,22 +2,20 @@ import 'package:flutter/material.dart';
 import '../../core/utils/formatters.dart';
 import '../../domain/entities/usuario.dart';
 import '../../domain/repositories/quickfreela_repository.dart';
-import '../controllers/solicitacoes_controller.dart';
+import '../controllers/prestador_controller.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/metric_tile.dart';
 import '../widgets/solicitacao_card.dart';
-import 'criar_solicitacao_screen.dart';
-import 'solicitacao_detail_screen.dart';
+import 'prestador_solicitacao_detail_screen.dart';
 
-class SolicitacoesScreen extends StatelessWidget {
-  const SolicitacoesScreen({
+class PrestadorDemandasScreen extends StatelessWidget {
+  const PrestadorDemandasScreen({
     required this.controller,
     required this.repository,
     required this.usuario,
     super.key,
   });
 
-  final SolicitacoesController controller;
+  final PrestadorController controller;
   final QuickFreelaRepository repository;
   final Usuario usuario;
 
@@ -47,26 +45,11 @@ class SolicitacoesScreen extends StatelessWidget {
                   ),
                 )
               else if (controller.solicitacoes.isEmpty)
-                SliverFillRemaining(
+                const SliverFillRemaining(
                   child: EmptyState(
-                    icon: Icons.assignment_add,
-                    title: 'Nenhuma solicitação ainda',
-                    message: 'Crie uma demanda rápida para receber propostas.',
-                    action: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => CriarSolicitacaoScreen(
-                              controller: controller,
-                              clienteId: usuario.id,
-                              repository: repository,
-                            ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Criar agora'),
-                    ),
+                    icon: Icons.inbox_outlined,
+                    title: 'Sem demandas abertas',
+                    message: 'Nenhuma demanda disponível no momento. Volte em breve.',
                   ),
                 )
               else
@@ -77,19 +60,45 @@ class SolicitacoesScreen extends StatelessWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final solicitacao = controller.solicitacoes[index];
+                      final jaMandou = controller.jaMandouProposta(solicitacao.id);
                       return SolicitacaoCard(
                         solicitacao: solicitacao,
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => SolicitacaoDetailScreen(
+                              builder: (_) => PrestadorSolicitacaoDetailScreen(
+                                solicitacao: solicitacao,
                                 controller: controller,
-                                solicitacaoId: solicitacao.id,
                                 repository: repository,
+                                usuario: usuario,
                               ),
                             ),
                           );
                         },
+                        trailing: jaMandou
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDCFCE7),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_circle, size: 14, color: Color(0xFF16A34A)),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Proposta enviada',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF16A34A),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : null,
                       );
                     },
                   ),
@@ -105,7 +114,7 @@ class SolicitacoesScreen extends StatelessWidget {
 class _Header extends StatelessWidget {
   const _Header({required this.controller, required this.usuario});
 
-  final SolicitacoesController controller;
+  final PrestadorController controller;
   final Usuario usuario;
 
   @override
@@ -114,11 +123,6 @@ class _Header extends StatelessWidget {
     const muted = Color(0xFF64748B);
     const border = Color(0xFFE2E8F0);
     const surfaceSoft = Color(0xFFF1F5F9);
-
-    final titleStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w900,
-          color: titleColor,
-        );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
@@ -131,10 +135,16 @@ class _Header extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('QuickFreela', style: titleStyle),
+                    Text(
+                      'QuickFreela',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: titleColor,
+                          ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                      'Cliente: ${usuario.nome}',
+                      'Prestador: ${usuario.nome}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: muted,
                             fontWeight: FontWeight.w600,
@@ -157,7 +167,7 @@ class _Header extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -175,7 +185,7 @@ class _Header extends StatelessWidget {
                     color: surfaceSoft,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(Icons.dashboard_customize_outlined, color: titleColor),
+                  child: const Icon(Icons.work_outline, color: titleColor),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -183,7 +193,7 @@ class _Header extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Painel de demandas',
+                        'Demandas abertas',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: titleColor,
                               fontWeight: FontWeight.w900,
@@ -191,7 +201,7 @@ class _Header extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        Formatters.clock(controller.lastSync),
+                        '${controller.solicitacoes.length} disponíveis  •  ${Formatters.clock(controller.lastSync)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: muted,
                               fontWeight: FontWeight.w600,
@@ -203,41 +213,6 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              MetricTile(
-                label: 'Abertas',
-                value: controller.countByStatus('aberta').toString(),
-                icon: Icons.radio_button_checked,
-                color: const Color(0xFF16A34A),
-              ),
-              const SizedBox(width: 10),
-              MetricTile(
-                label: 'Andamento',
-                value: controller.countByStatus('em_andamento').toString(),
-                icon: Icons.bolt_outlined,
-                color: const Color(0xFFF59E0B),
-              ),
-              const SizedBox(width: 10),
-              MetricTile(
-                label: 'Concluídas',
-                value: controller.countByStatus('concluida').toString(),
-                icon: Icons.done_all_outlined,
-                color: const Color(0xFF0F172A),
-              ),
-            ],
-          ),
-          if (controller.errorMessage != null && controller.solicitacoes.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              controller.errorMessage!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ],
         ],
       ),
     );

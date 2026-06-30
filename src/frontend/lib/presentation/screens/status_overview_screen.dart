@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
-
 import '../../core/utils/formatters.dart';
 import '../../domain/entities/solicitacao.dart';
+import '../../domain/entities/usuario.dart';
+import '../../domain/repositories/quickfreela_repository.dart';
 import '../controllers/solicitacoes_controller.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/status_chip.dart';
 import 'solicitacao_detail_screen.dart';
 
 class StatusOverviewScreen extends StatelessWidget {
-  const StatusOverviewScreen({required this.controller, super.key});
+  const StatusOverviewScreen({
+    required this.controller,
+    required this.repository,
+    required this.usuario,
+    super.key,
+  });
 
   final SolicitacoesController controller;
+  final QuickFreelaRepository repository;
+  final Usuario usuario;
 
   static const _title = Color(0xFF0F172A);
-  static const _text = Color(0xFF334155);
   static const _muted = Color(0xFF64748B);
-  static const _moneyGreen = Color(0xFF15803D);
   static const _softGreen = Color(0xFFF0FDF4);
   static const _softYellow = Color(0xFFFFFBEB);
   static const _softDark = Color(0xFFF1F5F9);
@@ -67,6 +73,7 @@ class StatusOverviewScreen extends StatelessWidget {
                   backgroundColor: _softGreen,
                   items: _filter(items, 'aberta'),
                   controller: controller,
+                  repository: repository,
                 ),
                 _StatusSection(
                   title: 'Em andamento',
@@ -75,6 +82,7 @@ class StatusOverviewScreen extends StatelessWidget {
                   backgroundColor: _softYellow,
                   items: _filter(items, 'em_andamento'),
                   controller: controller,
+                  repository: repository,
                 ),
                 _StatusSection(
                   title: 'Concluídas',
@@ -83,6 +91,7 @@ class StatusOverviewScreen extends StatelessWidget {
                   backgroundColor: _softDark,
                   items: _filter(items, 'concluida'),
                   controller: controller,
+                  repository: repository,
                 ),
                 _StatusSection(
                   title: 'Canceladas',
@@ -91,6 +100,7 @@ class StatusOverviewScreen extends StatelessWidget {
                   backgroundColor: _softRed,
                   items: _filter(items, 'cancelada'),
                   controller: controller,
+                  repository: repository,
                 ),
               ],
             ],
@@ -113,6 +123,7 @@ class _StatusSection extends StatelessWidget {
     required this.backgroundColor,
     required this.items,
     required this.controller,
+    required this.repository,
   });
 
   final String title;
@@ -121,16 +132,14 @@ class _StatusSection extends StatelessWidget {
   final Color backgroundColor;
   final List<Solicitacao> items;
   final SolicitacoesController controller;
+  final QuickFreelaRepository repository;
 
   static const _title = Color(0xFF0F172A);
-  static const _muted = Color(0xFF64748B);
   static const _moneyGreen = Color(0xFF15803D);
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (items.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -164,10 +173,7 @@ class _StatusSection extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 10),
               child: Card(
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   title: Text(
                     item.titulo,
                     maxLines: 1,
@@ -188,16 +194,14 @@ class _StatusSection extends StatelessWidget {
                       ),
                     ),
                   ),
-                  trailing: StatusChip(
-                    status: item.status,
-                    label: item.statusLabel,
-                  ),
+                  trailing: StatusChip(status: item.status, label: item.statusLabel),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => SolicitacaoDetailScreen(
                           controller: controller,
                           solicitacaoId: item.id,
+                          repository: repository,
                         ),
                       ),
                     );

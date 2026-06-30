@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
-
-import '../../core/config/app_config.dart';
 import '../../domain/entities/criar_solicitacao_input.dart';
+import '../../domain/repositories/quickfreela_repository.dart';
 import '../controllers/solicitacoes_controller.dart';
 import 'solicitacao_detail_screen.dart';
 
 class CriarSolicitacaoScreen extends StatefulWidget {
-  const CriarSolicitacaoScreen({required this.controller, super.key});
+  const CriarSolicitacaoScreen({
+    required this.controller,
+    required this.clienteId,
+    required this.repository,
+    super.key,
+  });
 
   final SolicitacoesController controller;
+  final int clienteId;
+  final QuickFreelaRepository repository;
 
   @override
   State<CriarSolicitacaoScreen> createState() => _CriarSolicitacaoScreenState();
@@ -96,52 +102,26 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
                         prefixIcon: Icon(Icons.category_outlined),
                       ),
                       items: const [
-                        DropdownMenuItem(
-                          value: 'programacao',
-                          child: Text('Programação'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'design',
-                          child: Text('Design'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'video',
-                          child: Text('Vídeo'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'traducao',
-                          child: Text('Tradução'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'geral',
-                          child: Text('Geral'),
-                        ),
+                        DropdownMenuItem(value: 'programacao', child: Text('Programação')),
+                        DropdownMenuItem(value: 'design', child: Text('Design')),
+                        DropdownMenuItem(value: 'video', child: Text('Vídeo')),
+                        DropdownMenuItem(value: 'traducao', child: Text('Tradução')),
+                        DropdownMenuItem(value: 'geral', child: Text('Geral')),
                       ],
                       onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _categoria = value);
-                        }
+                        if (value != null) setState(() => _categoria = value);
                       },
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _orcamentoController,
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(
-                        color: moneyGreen,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: const TextStyle(color: moneyGreen, fontWeight: FontWeight.w900),
                       decoration: const InputDecoration(
                         labelText: 'Orçamento',
                         prefixText: 'R\$ ',
-                        prefixStyle: TextStyle(
-                          color: moneyGreen,
-                          fontWeight: FontWeight.w900,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.payments_outlined,
-                          color: moneyGreen,
-                        ),
+                        prefixStyle: TextStyle(color: moneyGreen, fontWeight: FontWeight.w900),
+                        prefixIcon: Icon(Icons.payments_outlined, color: moneyGreen),
                       ),
                       validator: _moneyValidator,
                     ),
@@ -174,40 +154,25 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
   }
 
   String? _required(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Campo obrigatório';
-    }
-
+    if (value == null || value.trim().isEmpty) return 'Campo obrigatório';
     return null;
   }
 
   String? _moneyValidator(String? value) {
     final requiredError = _required(value);
-
-    if (requiredError != null) {
-      return requiredError;
-    }
-
+    if (requiredError != null) return requiredError;
     final parsed = double.tryParse(value!.replaceAll(',', '.'));
-
-    if (parsed == null || parsed < 0) {
-      return 'Informe um valor válido';
-    }
-
+    if (parsed == null || parsed < 0) return 'Informe um valor válido';
     return null;
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
-
     try {
       final created = await widget.controller.create(
         CriarSolicitacaoInput(
-          clienteId: AppConfig.clienteId,
+          clienteId: widget.clienteId,
           titulo: _tituloController.text.trim(),
           descricao: _descricaoController.text.trim(),
           categoria: _categoria,
@@ -215,31 +180,23 @@ class _CriarSolicitacaoScreenState extends State<CriarSolicitacaoScreen> {
           prazoEntrega: _prazoController.text.trim(),
         ),
       );
-
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => SolicitacaoDetailScreen(
             controller: widget.controller,
             solicitacaoId: created.id,
+            repository: widget.repository,
           ),
         ),
       );
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.toString())),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 }
